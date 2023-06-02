@@ -1,9 +1,13 @@
 import { useState, useRef, useEffect } from "react"
 import { faCheck, faTimes, faInfoCircle } from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
+import { axiosBase } from "./api/axios";
 
 const USER_REGEX = /^[A-z][A-z0-9-_]{3,23}$/;
 const PWD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,24}$/
+const REGISTER_URL = '/users'
+
+const abortController = new AbortController()
 
 export const Register = () => {
 
@@ -31,15 +35,12 @@ export const Register = () => {
 
   useEffect(() => {
     const result = USER_REGEX.test(user)
-    console.log(result)
-    console.log(user)
+
     setUserValid(result)
   }, [user])
 
   useEffect(() => {
     const result = PWD_REGEX.test(pwd)
-    console.log(result)
-    console.log(pwd)
     setPwdValid(result)
     const match = pwd === matchPwd
     setMatchPwdValid(match)
@@ -57,8 +58,51 @@ export const Register = () => {
       setErrMsg('Invalid Entry')
       return
     }
-    console.log(user, pwd)
-    setSuccess(true)
+
+    fetch(`http://localhost:3333/users/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ username: user, password: pwd }),
+      signal: abortController.signal
+    })
+      .then(response => response.json())
+      .then(data => {
+        console.log(data)
+        setSuccess(true)
+      })
+      .catch(err => {
+        if (!err?.response) {
+          setErrMsg('No Server Response')
+        } else if (err.response.status === 409) {
+          setErrMsg('Username Taken')
+        } else {
+          setErrMsg('Registration Failed')
+        }
+        errRef.current.focus()
+      })
+
+  //   try {
+  //     const response = await axiosBase.post(
+  //       REGISTER_URL,
+  //       JSON.stringify({ username: user, password: pwd }),
+  //       {
+  //         headers: { "Content-Type": "application/json" },
+  //         withCredentials: true
+  //       })
+  //     // clear input fields
+  //   } catch (err) {
+  //     if (!err?.response) {
+  //       setErrMsg('No Server Response')
+  //     } else if (err.response.status === 409) {
+  //       setErrMsg('Username Taken')
+  //     } else {
+  //       setErrMsg('Registration Failed')
+  //     }
+  //     errRef.current.focus()
+  //   }
   }
 
   return (
