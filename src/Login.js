@@ -34,6 +34,7 @@ export const Login = () => {
       .then(response => response.json())
       .then(data => {
         if (data?.access_token) {
+          setAuth({ user, pwd, access_token: data.access_token })
           setSuccess(true)
           console.log(data?.access_token)
         }
