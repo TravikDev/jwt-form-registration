@@ -1,15 +1,21 @@
 import { useRef, useState, useEffect, useContext } from "react"
-import { AuthContext } from "./context/AuthProvider"
+import { AuthContext } from "../context/AuthProvider"
+import { useAuth } from "../hooks/useAuth"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 
 export const Login = () => {
-  const { setAuth } = useContext(AuthContext)
+  const { setAuth } = useAuth()
+
+  const navigate = useNavigate()
+  const location = useLocation()
+  const from = location.state?.from?.pathname || '/'
+
   const userRef = useRef()
   const errRef = useRef()
 
   const [user, setUser] = useState('')
   const [pwd, setPwd] = useState('')
   const [errMsg, setErrMsg] = useState('')
-  const [success, setSuccess] = useState(false)
 
   useEffect(() => {
     userRef.current.focus()
@@ -23,7 +29,7 @@ export const Login = () => {
     e.preventDefault()
     setUser('')
     setPwd('')
-    const response = await fetch(
+    await fetch(
       'http://localhost:3333/auth/login',
       {
         method: 'POST',
@@ -34,9 +40,11 @@ export const Login = () => {
       .then(response => response.json())
       .then(data => {
         if (data?.access_token) {
-          setAuth({ user, pwd, access_token: data.access_token })
-          setSuccess(true)
-          console.log(data?.access_token)
+
+          setAuth({ user, pwd, roles: data?.roles, access_token: data.access_token })
+          console.log(data?.access_token, data?.roles)
+          navigate(from, { replace: true })
+
         }
         if (data.statusCode === 401) throw new Error('Wrong username or password')
       })
@@ -47,39 +55,38 @@ export const Login = () => {
   }
 
   return (
-    <>
-      {
-        success ? (
-          <p>You are logged in!</p>
-        ) : (
-          <section>
-            <p ref={errRef} style={errMsg ? style.note : style.offscreen} aria-live="assertive">{errMsg}</p>
-            <h1>Sign In</h1>
-            <form onSubmit={handleSubmit}>
-              <label htmlFor="username">Username:</label>
-              <input
-                type="text"
-                id="username"
-                ref={userRef}
-                autoComplete="off"
-                onChange={(e) => setUser(e.target.value)}
-                value={user}
-                required
-              />
 
-              <label htmlFor="password">Username:</label>
-              <input
-                type="password"
-                id="password"
-                onChange={(e) => setPwd(e.target.value)}
-                value={pwd}
-                required
-              />
-              <button>Sign In</button>
-            </form>
-          </section>
-        )}
-    </>
+    <section>
+      <p ref={errRef} style={errMsg ? style.note : style.offscreen} aria-live="assertive">{errMsg}</p>
+      <h1>Sign In</h1>
+      <form onSubmit={handleSubmit}>
+        <label htmlFor="username">Username:</label>
+        <input
+          type="text"
+          id="username"
+          ref={userRef}
+          autoComplete="off"
+          onChange={(e) => setUser(e.target.value)}
+          value={user}
+          required
+        />
+
+        <label htmlFor="password">Username:</label>
+        <input
+          type="password"
+          id="password"
+          onChange={(e) => setPwd(e.target.value)}
+          value={pwd}
+          required
+        />
+        <button>Sign In</button>
+        <p>
+        <Link to='/register'>Register</Link>
+        <Link to='/'>Home</Link>
+        </p>
+      </form>
+    </section>
+
   )
 }
 
